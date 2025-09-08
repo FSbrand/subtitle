@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆形 -->
+  <circle cx="32" cy="32" r="30" fill="#4A90E2" stroke="#00CED1" stroke-width="2"/>
+  
+  <!-- 语音波形左侧 -->
+  <g fill="#FFFFFF" opacity="0.9">
+    <rect x="8" y="28" width="2" height="8" rx="1"/>
+    <rect x="12" y="24" width="2" height="16" rx="1"/>
+    <rect x="16" y="20" width="2" height="24" rx="1"/>
+    <rect x="20" y="26" width="2" height="12" rx="1"/>
+  </g>
+  
+  <!-- 语音波形右侧 -->
+  <g fill="#FFFFFF" opacity="0.9">
+    <rect x="42" y="26" width="2" height="12" rx="1"/>
+    <rect x="46" y="20" width="2" height="24" rx="1"/>
+    <rect x="50" y="24" width="2" height="16" rx="1"/>
+    <rect x="54" y="28" width="2" height="8" rx="1"/>
+  </g>
+  
+  <!-- 中央双向箭头 -->
+  <g transform="translate(32, 32)">
+    <circle cx="0" cy="0" r="10" fill="#FFFFFF" opacity="0.9"/>
+    <path d="M-4,-2 L-1,-2 L-1,-4 L3,0 L-1,4 L-1,2 L-4,2 Z" fill="#4A90E2"/>
+    <path d="M4,2 L1,2 L1,4 L-3,0 L1,-4 L1,-2 L4,-2 Z" fill="#00CED1"/>
+  </g>
+  
+  <!-- 语言标识 -->
+  <text x="32" y="15" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" font-weight="bold" fill="#FFFFFF">EN中</text>
+  
+  <!-- 底部标识 -->
+  <text x="32" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" font-weight="bold" fill="#FFFFFF" opacity="0.8">SUBTITLE</text>
+</svg>

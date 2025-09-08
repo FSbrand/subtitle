@@ -1,0 +1,5 @@
+PyQt5>=5.15.0
+Flask>=2.0.0
+websockets>=10.0
+requests>=2.25.0
+pyinstaller>=5.0.0 
