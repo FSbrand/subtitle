@@ -213,44 +213,16 @@ async def test_custom_params(host="localhost", port=None):
             'params': {'top_color': 'green', 'bottom_color': 'orange'}
         },
         {
-            'text': '我们团队的引领者之星计划正在推进，请大家按时反馈进展。',
+            'text': '尊敬的各位领导，大家好！（欢迎词）欢迎莅临上海振华重工数字化生产运营中心，我是公司AI数字人小华，很荣幸能给各位领导做个汇报。数字化生产运营中心秉持“统筹引领、科学管理，数智融合、协同高效”的理念，集成了公司生产经营管理等各个方面的数据，利用数字化手段进行监控、监测和监管，致力于打造一个贯穿项目全生命周期的数字化管控平台，实现公司管理上的横向协同和纵向拉通，提升公司整体管理质效。',
             'params': {'top_color': 'cyan', 'bottom_color': 'yellow'}
         },
         {
-            'text': '小华提出全方位的改进建议，确保流程可以迅速流转。',
-            'params': {'top_color': 'magenta', 'bottom_color': 'lime'}
-        },
-        {
-            'text': 'The Leader Star roadmap ensures a comprehensive rollout for every team this quarter.',
-            'params': {'top_color': 'orange', 'bottom_color': 'white'}
-        },
-        {
-            'text': 'Xiao Hua will monitor the transfer milestones carefully to avoid last-minute surprises.',
-            'params': {'top_color': 'pink', 'bottom_color': 'cyan'}
-        },
-        {
-            'text': '这个季度的引领者之星项目要求全方位覆盖，每个环节都必须快速流转。',
-            'params': {'top_color': '#33ccff', 'bottom_color': '#ffcc00'}
-        },
-        {
-            'text': '引领者之星计划需要引领者之星级别的执行力，否则流转效率会下降。',
-            'params': {'top_color': '#ff6699', 'bottom_color': '#66ff66'}
-        },
-        {
-            'text': 'Our Leader Star roadmap must stay comprehensive; otherwise the transfer steps stall, Xiao Hua warned.',
-            'params': {'top_color': '#6666ff', 'bottom_color': '#ff9966'}
-        },
-        {
-            'text': 'Leader Star and Xiao Hua will coordinate a comprehensive transfer strategy for the upcoming launch.',
+            'text': '第二个模块是运营管理，公司制定了数智振华和人工智能+的专项工作方案，建设了150个数字化系统来支撑公司的营销、设计、研发、供应链、制造、运输、售后、质量、安全等全链路的业务开展，并通过人工智能等新技术的应用来持续提升整体运营质效，公司也获得了2024年世界人工智能大会卓越人工智能引领者之星的荣誉。',
             'params': {'top_color': '#00cc99', 'bottom_color': '#ff6666'}
         },
         {
-            'text': '小华与Leader Star团队讨论了comprehensive流程优化与transfer节点复盘。',
+            'text': '如已经建成的振华长兴智能仓储一期，共释放仓储面积5500平米，节省人员成本约20%，提高物料入出库效率一倍以上；振华南通涂装流水线，缩短生产周期80%，减少用工人员50%；振华传动齿轴加工生产线实现自动上下料、自动加工、自动工序流转，整体生产效率提升30%。',
             'params': {'top_color': '#cc99ff', 'bottom_color': '#99ffcc'}
-        },
-        {
-            'text': 'Please ensure the COMPREHENSIVE Leader Star transfer checklist is updated for Xiao Hua before Friday.',
-            'params': {'top_color': '#3399ff', 'bottom_color': '#ff3399'}
         }
     ]
     
