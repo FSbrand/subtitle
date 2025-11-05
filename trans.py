@@ -3,7 +3,7 @@
 """
 机器翻译 WebAPI 接口调用模块化
 简化版本：直接使用配置参数
-支持本地翻译缓存，优先使用自定义翻译
+支持本地翻译缓存（基于txt词语映射），优先使用自定义翻译
 """
 
 import requests
@@ -36,9 +36,9 @@ def get_resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 def load_local_translations():
-    """加载本地翻译映射文件"""
+    """加载本地翻译映射文件（txt词语映射）"""
     global local_translations
-    translations_file = "translations.json"
+    translations_file = "translations.txt"
     
     # 获取exe或脚本的实际目录
     if getattr(sys, 'frozen', False):
@@ -61,11 +61,32 @@ def load_local_translations():
             if os.path.exists(file_path):
                 logger.info(f"尝试加载翻译文件: {file_path}")
                 with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    # 获取翻译映射，转换为小写键以支持大小写不敏感匹配
-                    raw_translations = data.get("translations", {})
-                    local_translations = {key.lower(): value for key, value in raw_translations.items()}
-                    logger.info(f"成功加载本地翻译映射: {len(local_translations)} 条记录 (文件: {file_path})")
+                    parsed_translations = {}
+                    skipped_lines = 0
+                    for line_number, line in enumerate(f, start=1):
+                        stripped = line.strip()
+                        if not stripped or stripped.startswith("#"):
+                            continue
+                        if "，" in stripped:
+                            key, value = [part.strip() for part in stripped.split("，", 1)]
+                        elif "," in stripped:
+                            key, value = [part.strip() for part in stripped.split(",", 1)]
+                        else:
+                            skipped_lines += 1
+                            logger.warning(f"翻译文件格式不正确（第{line_number}行）: {stripped}")
+                            continue
+                        if not key or not value:
+                            skipped_lines += 1
+                            logger.warning(f"翻译文件缺少键或值（第{line_number}行）: {stripped}")
+                            continue
+                        parsed_translations[key.lower()] = value
+                    
+                    local_translations = parsed_translations
+                    logger.info(
+                        f"成功加载本地翻译映射: {len(local_translations)} 条记录 (文件: {file_path})"
+                    )
+                    if skipped_lines:
+                        logger.warning(f"有 {skipped_lines} 行因格式问题被跳过")
                     loaded = True
                     break
         

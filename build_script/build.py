@@ -131,16 +131,16 @@ def build_executable():
                 print(f"📄 输出文件: {exe_path}")
                 print(f"📊 文件大小: {size_mb:.1f} MB")
                 
-                # 自动复制translations.json到dist目录
+                # 自动复制translations.txt到dist目录
                 try:
-                    translations_src = project_root / "translations.json"
-                    translations_dst = project_root / "build" / "dist" / "translations.json"
+                    translations_src = project_root / "translations.txt"
+                    translations_dst = project_root / "build" / "dist" / "translations.txt"
                     
                     if translations_src.exists():
                         shutil.copy2(translations_src, translations_dst)
                         print(f"📝 已复制翻译词典: {translations_dst}")
                     else:
-                        print("⚠️  未找到translations.json文件，将使用API翻译")
+                        print("⚠️  未找到translations.txt文件，将使用API翻译")
                         
                     # 复制图标文件
                     icon_src = project_root / "icon_simple.svg"

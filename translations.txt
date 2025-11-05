@@ -1,0 +1,12 @@
+# 本地翻译词典（每行一个映射，中文逗号`，`分隔）
+# 左侧为源文本，右侧为目标文本，大小写不敏感匹配
+引领者之星，Leader Star
+小华，Xiao Hua
+全方位，comprehensive
+流转，transfer
+你好，Hello
+早上好，Good morning
+Leader Star，引领者之星
+Xiao Hua，小华
+comprehensive，全方位
+transfer，流转

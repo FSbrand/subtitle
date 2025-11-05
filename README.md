@@ -44,7 +44,7 @@ async def send_subtitle():
     async with websockets.connect('ws://localhost:4321') as websocket:
         message = {
             "text": "Hello World 你好世界",      # 必需: 要显示的文本
-            "y_position": 900,                 # 可选: 垂直位置
+            "y_position": 1000,                # 可选: 垂直位置 (默认 1000)
             "top_color": "cyan",              # 可选: 上方文本颜色
             "bottom_color": "yellow",         # 可选: 下方文本颜色
             "timeout": 8,                     # 可选: 显示时长(秒)
@@ -61,7 +61,7 @@ asyncio.run(send_subtitle())
 | 参数 | 类型 | 必需 | 默认值 | 说明 |
 |------|------|------|--------|------|
 | `text` | string | ✅ | - | 要显示的文本（自动检测语言） |
-| `y_position` | int | ❌ | 900 | 垂直位置 (0-1080) |
+| `y_position` | int | ❌ | 1000 | 垂直位置 (0-1080) |
 | `top_color` | string | ❌ | "white" | 上方文本颜色 |
 | `bottom_color` | string | ❌ | "yellow" | 下方文本颜色 |
 | `timeout` | int | ❌ | 6 | 显示时长(秒) |
@@ -83,9 +83,8 @@ python language_detector.py
 
 ### 方法一：使用构建脚本（推荐）
 ```bash
-cd build
-pip install -r requirements_build.txt
-python build_subtitle.py
+pip install -r build_script/requirements_build.txt
+python build_script/build.py
 ```
 
 ### 方法二：手动打包
@@ -98,23 +97,20 @@ pyinstaller --onefile --noconsole --name=subtitle_optimized main.py
 ## 📁 项目结构
 
 ```
-subtitle/
-├── 核心模块/
-│   ├── main.py                # 主程序 - GUI + WebSocket服务
-│   ├── trans.py               # 翻译模块 - 科大讯飞API
-│   ├── language_detector.py   # 语言检测 - 智能识别
-│   └── config.py             # 配置管理 - API密钥等
-├── 测试工具/
-│   └── test_client.py        # WebSocket测试客户端
-├── 构建文件/
-│   └── build/
-│       ├── build_subtitle.py      # 自动化构建脚本
-│       └── requirements_build.txt # 最小化构建依赖
-├── 日志目录/
-│   └── log/                  # 按日生成的详细日志
-└── 配置文件/
-    ├── requirements.txt      # 开发环境依赖
-    └── README.md            # 本文档
+.
+├── README.md
+├── build_script/
+│   ├── build.py              # 自动化构建脚本
+│   └── requirements_build.txt # 构建依赖
+├── config.py                 # 配置管理 - API密钥等
+├── icon_simple.svg           # 程序图标
+├── language_detector.py      # 语言检测
+├── log/                      # 按日生成的详细日志
+├── main.py                   # 主程序 - GUI + WebSocket服务
+├── requirements.txt          # 开发环境依赖
+├── test_client.py            # WebSocket测试客户端
+├── trans.py                  # 翻译模块 - 科大讯飞API
+└── translations.txt          # 本地翻译缓存
 ```
 
 ## 🔧 技术架构
@@ -168,7 +164,7 @@ subtitle/
 本地翻译缓存允许你为特定文本设置自定义翻译，系统会优先使用这些翻译而不是调用API。
 
 **适用场景**：
-- ⚡ **句子级别翻译**: 支持完整句子的精确翻译映射
+- ⚡ **词语/短语替换**: 快速覆盖常用词、短语翻译
 - 🎯 **专业术语**: 为特殊词汇设置标准翻译
 - 💰 **降低成本**: 减少API调用次数
 - 🚀 **提升速度**: 缓存命中时零延迟响应
@@ -176,24 +172,19 @@ subtitle/
 ### 📝 配置方法
 
 #### 1. 编辑翻译映射文件
-编辑根目录下的 `translations.json` 文件：
+编辑根目录下的 `translations.txt` 文件（每行一个词语映射，使用中文逗号 `，` 分隔）：
 
-```json
-{
-    "comment": "支持句子级别的精确翻译",
-    "translations": {
-        "Hello": "你好",
-        "How are you doing today?": "你今天过得怎么样？",
-        "Can you help me with this problem?": "你能帮我解决这个问题吗？",
-        "Thank you very much for your assistance": "非常感谢你的帮助",
-        "专业术语翻译示例": "Professional terminology example"
-    }
-}
+```
+# 注释行以 # 开头，会被忽略
+引领者之星，Leader Star
+小华，Xiao Hua
+全方位，comprehensive
+流转，transfer
 ```
 
 #### 2. 文件放置位置（exe兼容）
 系统会按以下优先级查找配置文件：
-1. **当前工作目录** - `./translations.json`
+1. **当前工作目录** - `./translations.txt`
 2. **exe同目录** - 与exe文件在同一文件夹
 3. **程序内置** - 打包在exe中的默认配置
 
@@ -201,39 +192,25 @@ subtitle/
 
 #### 大小写不敏感匹配
 ```
-"Hello" → "你好"
-"hello" → "你好"  
-"HELLO" → "你好"
+"Leader Star" → "引领者之星"
+"leader star" → "引领者之星"
+"LEADER STAR" → "引领者之星"
 ```
 
-#### 完整句子支持
-```json
-{
-    "I'm looking forward to working with you": "我期待与你合作",
-    "Let's schedule a meeting for next week": "让我们安排下周开会"
-}
+#### 中英双向支持
 ```
-
-#### 双向翻译支持
-```json
-{
-    "人工智能技术正在快速发展": "AI technology is developing rapidly",
-    "Machine Learning": "机器学习"
-}
+"引领者之星" → "Leader Star"
+"全方位" → "comprehensive"
+"transfer" → "流转"
 ```
 
 ### 🧪 测试与验证
 
-使用测试工具验证缓存功能：
-```bash
-python test_local_cache.py
-```
-
-**测试选项**：
-- **1**: 基础缓存功能测试
-- **2**: WebSocket + 缓存测试  
-- **3**: 重新加载缓存测试
-- **4**: 完整功能测试
+验证缓存是否生效的建议流程：
+1. 在 `translations.txt` 中添加或修改需要缓存的词语映射。
+2. 启动主程序：`python main.py`。
+3. 使用测试客户端发送缓存中的文本，例如运行 `python test_client.py --mode interactive` 并输入缓存内容。
+4. 观察字幕窗口或查看 `log/` 目录下的日志，确认是否命中本地缓存。
 
 ### 📋 配置示例
 
@@ -261,14 +238,14 @@ python test_local_cache.py
 | 问题 | 解决方案 |
 |------|----------|
 | 缓存不生效 | 检查JSON格式，确认文本完全匹配 |
-| exe找不到文件 | 将translations.json放在exe同目录 |
+| exe找不到文件 | 将translations.txt放在exe同目录 |
 | 中文显示乱码 | 确保文件保存为UTF-8编码 |
 | 修改未生效 | 重启程序或检查文件保存 |
 
 ### 📝 详细日志
 ```
-INFO - 成功加载本地翻译映射: 15 条记录 (文件: ./translations.json)
-INFO - 使用本地翻译缓存: 'Hello' -> '你好'
+INFO - 成功加载本地翻译映射: 6 条记录 (文件: ./translations.txt)
+INFO - 使用本地翻译缓存: '你好' -> 'Hello'
 DEBUG - 本地缓存未找到 'New sentence'，调用API翻译
 ```
 
@@ -288,4 +265,3 @@ DEBUG - 本地缓存未找到 'New sentence'，调用API翻译
 ---
 
 🌟 **如果这个项目对您有帮助，请给个Star支持一下！**
-"# subtitle" 

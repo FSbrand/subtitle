@@ -164,6 +164,22 @@ async def test_custom_params(host="localhost", port=None):
         {
             'text': 'Mixed 中英文 language test',
             'params': {'top_color': 'green', 'bottom_color': 'orange'}
+        },
+        {
+            'text': '引领者之星',
+            'params': {'top_color': 'cyan', 'bottom_color': 'yellow'}
+        },
+        {
+            'text': '小华',
+            'params': {'top_color': 'magenta', 'bottom_color': 'lime'}
+        },
+        {
+            'text': '全方位',
+            'params': {'top_color': 'orange', 'bottom_color': 'white'}
+        },
+        {
+            'text': '流转',
+            'params': {'top_color': 'pink', 'bottom_color': 'cyan'}
         }
     ]
     
