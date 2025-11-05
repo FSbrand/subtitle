@@ -39,6 +39,8 @@ def write_execution_log(args, status):
     except Exception as exc:
         # 仅记录写入失败，不抛出
         print(f"⚠️ 无法写入test_results.txt: {exc}")
+    finally:
+        EXECUTION_LOGS.clear()
 
 
 SAMPLE_TEXTS = [
@@ -86,6 +88,17 @@ async def send_test_message(websocket, text, custom_params=None):
     try:
         await websocket.send(json.dumps(message, ensure_ascii=False))
         log_output(f"✓ 发送: {text[:20]}{'...' if len(text) > 20 else ''}")
+        
+        try:
+            response = await asyncio.wait_for(websocket.recv(), timeout=8)
+            if isinstance(response, bytes):
+                response = response.decode('utf-8', errors='replace')
+            log_output(f"← 响应: {response[:80]}{'...' if len(response) > 80 else ''}")
+        except asyncio.TimeoutError:
+            log_output("⚠️ 未收到响应（8s 超时）")
+        except Exception as recv_exc:
+            log_output(f"⚠️ 接收响应失败: {recv_exc}")
+        
         return True
     except Exception as e:
         log_output(f"✗ 发送失败: {e}")

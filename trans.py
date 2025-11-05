@@ -321,7 +321,11 @@ def build_placeholder_text(text, matches):
             # 已被前一个命中覆盖，跳过
             continue
         
-        placeholder = f"__GLOSSARY_{placeholder_index}__"
+        # 使用私有区字符作为占位符，避免翻译接口插入空格
+        if placeholder_index <= (0xF8FF - 0xE000):
+            placeholder = chr(0xE000 + placeholder_index)
+        else:
+            placeholder = f"⟪GLOSSARY{placeholder_index}⟫"
         result_parts.append(text[last_index:start])
         result_parts.append(placeholder)
         placeholder_map[placeholder] = entry.get("replacement", "")
@@ -368,13 +372,11 @@ def restore_placeholders(text, placeholder_map):
     if not placeholder_map or not text:
         return text
     
-    pattern = re.compile(r"__GLOSSARY_\d+__")
-    
-    def replace_placeholder(match):
-        placeholder = match.group(0)
-        return placeholder_map.get(placeholder, placeholder)
-    
-    return pattern.sub(replace_placeholder, text)
+    restored_text = text
+    # 避免短占位符先被替换，按长度倒序处理
+    for placeholder in sorted(placeholder_map.keys(), key=len, reverse=True):
+        restored_text = restored_text.replace(placeholder, placeholder_map[placeholder])
+    return restored_text
 
 
 def translate_text(text, from_lang=None, to_lang=None):
