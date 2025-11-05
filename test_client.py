@@ -10,9 +10,37 @@ import json
 import random
 import argparse
 import sys
+from datetime import datetime
 from config import NETWORK_CONFIG
 
 # 测试文本样本
+EXECUTION_LOGS = []
+
+
+def log_output(message):
+    """打印并记录日志到内存，便于写入文件"""
+    text = str(message)
+    print(text)
+    EXECUTION_LOGS.append(text)
+
+
+def write_execution_log(args, status):
+    """将本次测试结果追加写入本地文件"""
+    if not EXECUTION_LOGS:
+        return
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    header = f"=== Test run {timestamp} mode={args.mode} host={args.host}:{args.port} status={status} ==="
+    lines = [header, *EXECUTION_LOGS, ""]
+    
+    try:
+        with open("test_results.txt", "a", encoding="utf-8") as log_file:
+            log_file.write("\n".join(lines))
+    except Exception as exc:
+        # 仅记录写入失败，不抛出
+        print(f"⚠️ 无法写入test_results.txt: {exc}")
+
+
 SAMPLE_TEXTS = [
     "Please send me the updated documents",
     "你好，世界！",
@@ -57,42 +85,42 @@ async def send_test_message(websocket, text, custom_params=None):
     
     try:
         await websocket.send(json.dumps(message, ensure_ascii=False))
-        print(f"✓ 发送: {text[:20]}{'...' if len(text) > 20 else ''}")
+        log_output(f"✓ 发送: {text[:20]}{'...' if len(text) > 20 else ''}")
         return True
     except Exception as e:
-        print(f"✗ 发送失败: {e}")
+        log_output(f"✗ 发送失败: {e}")
         return False
 
 async def test_basic_functionality(host="localhost", port=None):
     """基本功能测试"""
-    print("\n=== 基本功能测试 ===")
+    log_output("\n=== 基本功能测试 ===")
     
     if port is None:
         port = NETWORK_CONFIG["websocket_port"]
     
     try:
         async with websockets.connect(f'ws://{host}:{port}') as websocket:
-            print(f"连接到 ws://{host}:{port}")
+            log_output(f"连接到 ws://{host}:{port}")
             
             # 发送单条测试消息
             await send_test_message(websocket, "基本功能测试 - 你好世界")
             await asyncio.sleep(2)
             
-            print("✓ 基本功能测试完成")
+            log_output("✓ 基本功能测试完成")
             
     except Exception as e:
-        print(f"✗ 基本功能测试失败: {e}")
+        log_output(f"✗ 基本功能测试失败: {e}")
 
 async def test_batch_messages(host="localhost", port=None):
     """批量消息测试"""
-    print("\n=== 批量消息测试 ===")
+    log_output("\n=== 批量消息测试 ===")
     
     if port is None:
         port = NETWORK_CONFIG["websocket_port"]
     
     try:
         async with websockets.connect(f'ws://{host}:{port}') as websocket:
-            print(f"连接到 ws://{host}:{port}")
+            log_output(f"连接到 ws://{host}:{port}")
             
             success_count = 0
             total_count = len(SAMPLE_TEXTS)
@@ -105,21 +133,21 @@ async def test_batch_messages(host="localhost", port=None):
                 # 随机间隔
                 await asyncio.sleep(random.uniform(0.5, 2.0))
             
-            print(f"✓ 批量测试完成: {success_count}/{total_count} 成功")
+            log_output(f"✓ 批量测试完成: {success_count}/{total_count} 成功")
             
     except Exception as e:
-        print(f"✗ 批量消息测试失败: {e}")
+        log_output(f"✗ 批量消息测试失败: {e}")
 
 async def test_rapid_messages(host="localhost", port=None):
     """快速消息测试"""
-    print("\n=== 快速消息测试 ===")
+    log_output("\n=== 快速消息测试 ===")
     
     if port is None:
         port = NETWORK_CONFIG["websocket_port"]
     
     try:
         async with websockets.connect(f'ws://{host}:{port}') as websocket:
-            print(f"连接到 ws://{host}:{port}")
+            log_output(f"连接到 ws://{host}:{port}")
             
             success_count = 0
             rapid_tests = SAMPLE_TEXTS[:5]  # 取前5条进行快速测试
@@ -132,14 +160,14 @@ async def test_rapid_messages(host="localhost", port=None):
                 # 短间隔
                 await asyncio.sleep(0.1)
             
-            print(f"✓ 快速测试完成: {success_count}/{len(rapid_tests)} 成功")
+            log_output(f"✓ 快速测试完成: {success_count}/{len(rapid_tests)} 成功")
             
     except Exception as e:
-        print(f"✗ 快速消息测试失败: {e}")
+        log_output(f"✗ 快速消息测试失败: {e}")
 
 async def test_custom_params(host="localhost", port=None):
     """自定义参数测试"""
-    print("\n=== 自定义参数测试 ===")
+    log_output("\n=== 自定义参数测试 ===")
     
     if port is None:
         port = NETWORK_CONFIG["websocket_port"]
@@ -185,28 +213,28 @@ async def test_custom_params(host="localhost", port=None):
     
     try:
         async with websockets.connect(f'ws://{host}:{port}') as websocket:
-            print(f"连接到 ws://{host}:{port}")
+            log_output(f"连接到 ws://{host}:{port}")
             
             for test_case in test_cases:
                 await send_test_message(websocket, test_case['text'], test_case['params'])
                 await asyncio.sleep(3)
             
-            print("✓ 自定义参数测试完成")
+            log_output("✓ 自定义参数测试完成")
             
     except Exception as e:
-        print(f"✗ 自定义参数测试失败: {e}")
+        log_output(f"✗ 自定义参数测试失败: {e}")
 
 async def interactive_test(host="localhost", port=None):
     """交互式测试"""
-    print("\n=== 交互式测试模式 ===")
-    print("输入要测试的文本，按回车发送。输入 'quit' 退出。")
+    log_output("\n=== 交互式测试模式 ===")
+    log_output("输入要测试的文本，按回车发送。输入 'quit' 退出。")
     
     if port is None:
         port = NETWORK_CONFIG["websocket_port"]
     
     try:
         async with websockets.connect(f'ws://{host}:{port}') as websocket:
-            print(f"连接到 ws://{host}:{port}")
+            log_output(f"连接到 ws://{host}:{port}")
             
             while True:
                 try:
@@ -217,19 +245,19 @@ async def interactive_test(host="localhost", port=None):
                     if text:
                         await send_test_message(websocket, text)
                     else:
-                        print("请输入有效文本")
+                        log_output("请输入有效文本")
                         
                 except KeyboardInterrupt:
-                    print("\n用户中断")
+                    log_output("\n用户中断")
                     break
                 except EOFError:
-                    print("\n输入结束")
+                    log_output("\n输入结束")
                     break
             
-            print("✓ 交互式测试结束")
+            log_output("✓ 交互式测试结束")
             
     except Exception as e:
-        print(f"✗ 交互式测试失败: {e}")
+        log_output(f"✗ 交互式测试失败: {e}")
 
 def main():
     """主函数"""
@@ -241,8 +269,8 @@ def main():
     
     args = parser.parse_args()
     
-    print("字幕软件 WebSocket 测试客户端")
-    print(f"目标服务器: ws://{args.host}:{args.port}")
+    log_output("字幕软件 WebSocket 测试客户端")
+    log_output(f"目标服务器: ws://{args.host}:{args.port}")
     
     async def run_tests():
         if args.mode == 'basic':
@@ -264,12 +292,17 @@ def main():
             await asyncio.sleep(1)
             await test_custom_params(args.host, args.port)
     
+    status = "success"
     try:
         asyncio.run(run_tests())
     except KeyboardInterrupt:
-        print("\n测试被用户中断")
+        log_output("\n测试被用户中断")
+        status = "interrupt"
     except Exception as e:
-        print(f"测试执行失败: {e}")
+        log_output(f"测试执行失败: {e}")
+        status = f"error: {e}"
+    finally:
+        write_execution_log(args, status)
 
 if __name__ == "__main__":
     main() 

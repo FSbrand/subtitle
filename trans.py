@@ -17,13 +17,21 @@ import os
 import sys
 import re
 from config import XFYUN_CONFIG, TRANSLATION_CONFIG
-from language_detector import update_translation_config
+from language_detector import update_translation_config, detect_language
 
 # 获取logger (不重复配置)
 logger = logging.getLogger(__name__)
 
 # 全局翻译缓存字典
 local_translations = {}
+
+
+def normalize_language_code(lang_code):
+    """限制语言代码到已支持范围"""
+    if not lang_code:
+        return None
+    lang_code = lang_code.lower()
+    return lang_code if lang_code in ('cn', 'en') else None
 
 def get_resource_path(relative_path):
     """获取资源文件的绝对路径，兼容开发环境和打包后的exe"""
@@ -80,9 +88,16 @@ def load_local_translations():
                             skipped_lines += 1
                             logger.warning(f"翻译文件缺少键或值（第{line_number}行）: {stripped}")
                             continue
-                        parsed_translations[key.lower()] = {
+                        key_lower = key.lower()
+                        source_lang = normalize_language_code(detect_language(key))
+                        target_lang = normalize_language_code(detect_language(value))
+                        compiled_regex = re.compile(re.escape(key), re.IGNORECASE)
+                        parsed_translations[key_lower] = {
                             "pattern": key,
-                            "replacement": value
+                            "replacement": value,
+                            "source_lang": source_lang,
+                            "target_lang": target_lang,
+                            "regex": compiled_regex
                         }
                     
                     local_translations = parsed_translations
@@ -250,61 +265,116 @@ class get_result(object):
             return ''
 
 
-def apply_local_translations(text):
-    """
-    在文本中执行本地翻译替换，可匹配句子中的词语（大小写不敏感）
-    
-    Returns:
-        tuple: (处理后的文本, 替换次数)
-    """
+def collect_glossary_matches(text, from_lang=None, to_lang=None):
+    """收集与当前翻译方向匹配的词典命中"""
     if not local_translations or not text:
-        return text, 0
+        return []
     
     matches = []
-    pattern_replacements = {}
     for entry in local_translations.values():
-        pattern_text = entry.get("pattern", "")
-        replacement = entry.get("replacement", "")
+        pattern_text = entry.get("pattern")
+        replacement = entry.get("replacement")
         if not pattern_text or replacement is None:
             continue
-        pattern_replacements[pattern_text] = replacement
         
-        regex = re.compile(re.escape(pattern_text), re.IGNORECASE)
+        source_lang = entry.get("source_lang")
+        target_lang = entry.get("target_lang")
+        
+        if from_lang and source_lang and source_lang != from_lang:
+            continue
+        if to_lang and target_lang and target_lang != to_lang:
+            continue
+        
+        regex = entry.get("regex")
+        if not regex:
+            continue
+        
         for match in regex.finditer(text):
-            matches.append((match.start(), match.end(), replacement, pattern_text))
+            matches.append({
+                "start": match.start(),
+                "end": match.end(),
+                "entry": entry
+            })
     
+    # 按起始位置排序，同起点时优先较长匹配
+    matches.sort(key=lambda item: (item["start"], -(item["end"] - item["start"])))
+    return matches
+
+
+def build_placeholder_text(text, matches):
+    """将命中词条替换为占位符，返回处理后的文本和映射"""
     if not matches:
-        return text, 0
+        return text, {}, []
     
-    # 优先处理较长的匹配，随后按起始位置排序
-    matches.sort(key=lambda item: (item[0], -(item[1] - item[0])))
+    result_parts = []
+    placeholder_map = {}
+    applied_matches = []
+    last_index = 0
+    placeholder_index = 0
+    
+    for match in matches:
+        start = match["start"]
+        end = match["end"]
+        entry = match["entry"]
+        
+        if start < last_index:
+            # 已被前一个命中覆盖，跳过
+            continue
+        
+        placeholder = f"__GLOSSARY_{placeholder_index}__"
+        result_parts.append(text[last_index:start])
+        result_parts.append(placeholder)
+        placeholder_map[placeholder] = entry.get("replacement", "")
+        applied_matches.append({
+            "start": start,
+            "end": end,
+            "entry": entry,
+            "placeholder": placeholder
+        })
+        
+        last_index = end
+        placeholder_index += 1
+    
+    result_parts.append(text[last_index:])
+    return ''.join(result_parts), placeholder_map, applied_matches
+
+
+def apply_matches_direct(text, applied_matches):
+    """直接在原文本中替换命中词条（用于兜底）"""
+    if not applied_matches:
+        return text
     
     result_parts = []
     last_index = 0
-    total_replacements = 0
-    applied_counts = {}
     
-    for start, end, replacement, pattern_text in matches:
+    for match in applied_matches:
+        start = match["start"]
+        end = match["end"]
+        entry = match["entry"]
+        
         if start < last_index:
-            # 与已替换区域重叠，跳过
             continue
         
         result_parts.append(text[last_index:start])
-        result_parts.append(replacement)
+        result_parts.append(entry.get("replacement", ""))
         last_index = end
-        total_replacements += 1
-        applied_counts[pattern_text] = applied_counts.get(pattern_text, 0) + 1
     
     result_parts.append(text[last_index:])
-    updated_text = ''.join(result_parts)
+    return ''.join(result_parts)
+
+
+def restore_placeholders(text, placeholder_map):
+    """将翻译结果中的占位符替换回目标词条"""
+    if not placeholder_map or not text:
+        return text
     
-    for pattern_text, count in applied_counts.items():
-        replacement = pattern_replacements.get(pattern_text, "?")
-        logger.info(
-            f"本地翻译替换: '{pattern_text}' -> '{replacement}' (匹配 {count} 次)"
-        )
+    pattern = re.compile(r"__GLOSSARY_\d+__")
     
-    return updated_text, total_replacements
+    def replace_placeholder(match):
+        placeholder = match.group(0)
+        return placeholder_map.get(placeholder, placeholder)
+    
+    return pattern.sub(replace_placeholder, text)
 
 
 def translate_text(text, from_lang=None, to_lang=None):
@@ -334,16 +404,25 @@ def translate_text(text, from_lang=None, to_lang=None):
             logger.info(f"使用本地翻译缓存: '{text_cleaned}' -> '{cached_result}'")
             return cached_result
         
-        # 尝试在句子中执行局部替换
-        replaced_text, replacements = apply_local_translations(text_cleaned)
-        if replacements > 0:
-            logger.info(
-                f"本地翻译完成（局部替换 {replacements} 处）: '{text_cleaned}' -> '{replaced_text}'"
-            )
-            return replaced_text
+        # 根据文本内容自动检测翻译方向
+        auto_config = update_translation_config(text_cleaned)
+        from_lang = normalize_language_code(auto_config.get("from")) or TRANSLATION_CONFIG["from_lang"]
+        to_lang = normalize_language_code(auto_config.get("to")) or TRANSLATION_CONFIG["to_lang"]
         
-        # 本地缓存未找到，使用API翻译
-        logger.debug(f"本地缓存未找到 '{text_cleaned}'，调用API翻译")
+        matches = collect_glossary_matches(text_cleaned, from_lang, to_lang)
+        placeholder_text, placeholder_map, applied_matches = build_placeholder_text(text_cleaned, matches)
+        if applied_matches:
+            match_terms = [
+                m["entry"].get("pattern", "")
+                for m in applied_matches
+                if m.get("entry") and m["entry"].get("pattern")
+            ]
+            logger.info(
+                f"使用本地词典占位符: 匹配 {len(applied_matches)} 处"
+                + (f" ({', '.join(match_terms)})" if match_terms else "")
+            )
+        
+        request_text = placeholder_text
         
         # 获取API配置参数
         host = XFYUN_CONFIG["host"]
@@ -351,26 +430,23 @@ def translate_text(text, from_lang=None, to_lang=None):
         api_key = XFYUN_CONFIG["api_key"]
         secret = XFYUN_CONFIG["secret"]
         
-        # 如果没有指定翻译方向，则自动检测
-        if from_lang is None or to_lang is None:
-            # 根据文本内容自动检测翻译方向
-            auto_config = update_translation_config(text_cleaned)
-            from_lang = auto_config["from"]
-            to_lang = auto_config["to"]
-            logger.debug(f"自动检测翻译方向: {from_lang} -> {to_lang}")
-        
         business_args = {"from": from_lang, "to": to_lang}
         
         # 执行翻译
-        translator = get_result(host, app_id, api_key, secret, text_cleaned, business_args)
+        translator = get_result(host, app_id, api_key, secret, request_text, business_args)
         result = translator.call_url()
         
-        if result and result != text_cleaned:
-            logger.info(f"API翻译完成: '{text_cleaned}' -> '{result}'")
-            return result
-        else:
-            logger.warning(f"API翻译失败或无结果，返回原文: '{text_cleaned}'")
-            return text
+        if result:
+            final_result = restore_placeholders(result, placeholder_map)
+            logger.info(f"API翻译完成: '{text_cleaned}' -> '{final_result}'")
+            return final_result
+        
+        logger.warning(f"API翻译失败或无结果，返回兜底结果: '{text_cleaned}'")
+        if applied_matches:
+            fallback_text = apply_matches_direct(text_cleaned, applied_matches)
+            logger.info(f"使用本地词典兜底: '{text_cleaned}' -> '{fallback_text}'")
+            return fallback_text
+        return text
         
     except Exception as e:
         logger.error(f"翻译函数发生错误: {str(e)}")
