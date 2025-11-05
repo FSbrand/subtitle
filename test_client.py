@@ -228,6 +228,30 @@ async def test_custom_params(host="localhost", port=None):
         {
             'text': 'Xiao Hua will monitor the transfer milestones carefully to avoid last-minute surprises.',
             'params': {'top_color': 'pink', 'bottom_color': 'cyan'}
+        },
+        {
+            'text': '这个季度的引领者之星项目要求全方位覆盖，每个环节都必须快速流转。',
+            'params': {'top_color': '#33ccff', 'bottom_color': '#ffcc00'}
+        },
+        {
+            'text': '引领者之星计划需要引领者之星级别的执行力，否则流转效率会下降。',
+            'params': {'top_color': '#ff6699', 'bottom_color': '#66ff66'}
+        },
+        {
+            'text': 'Our Leader Star roadmap must stay comprehensive; otherwise the transfer steps stall, Xiao Hua warned.',
+            'params': {'top_color': '#6666ff', 'bottom_color': '#ff9966'}
+        },
+        {
+            'text': 'Leader Star and Xiao Hua will coordinate a comprehensive transfer strategy for the upcoming launch.',
+            'params': {'top_color': '#00cc99', 'bottom_color': '#ff6666'}
+        },
+        {
+            'text': '小华与Leader Star团队讨论了comprehensive流程优化与transfer节点复盘。',
+            'params': {'top_color': '#cc99ff', 'bottom_color': '#99ffcc'}
+        },
+        {
+            'text': 'Please ensure the COMPREHENSIVE Leader Star transfer checklist is updated for Xiao Hua before Friday.',
+            'params': {'top_color': '#3399ff', 'bottom_color': '#ff3399'}
         }
     ]
     
