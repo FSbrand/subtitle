@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import sys
+import re
 from config import XFYUN_CONFIG, TRANSLATION_CONFIG
 from language_detector import update_translation_config
 
@@ -79,7 +80,10 @@ def load_local_translations():
                             skipped_lines += 1
                             logger.warning(f"翻译文件缺少键或值（第{line_number}行）: {stripped}")
                             continue
-                        parsed_translations[key.lower()] = value
+                        parsed_translations[key.lower()] = {
+                            "pattern": key,
+                            "replacement": value
+                        }
                     
                     local_translations = parsed_translations
                     logger.info(
@@ -246,6 +250,63 @@ class get_result(object):
             return ''
 
 
+def apply_local_translations(text):
+    """
+    在文本中执行本地翻译替换，可匹配句子中的词语（大小写不敏感）
+    
+    Returns:
+        tuple: (处理后的文本, 替换次数)
+    """
+    if not local_translations or not text:
+        return text, 0
+    
+    matches = []
+    pattern_replacements = {}
+    for entry in local_translations.values():
+        pattern_text = entry.get("pattern", "")
+        replacement = entry.get("replacement", "")
+        if not pattern_text or replacement is None:
+            continue
+        pattern_replacements[pattern_text] = replacement
+        
+        regex = re.compile(re.escape(pattern_text), re.IGNORECASE)
+        for match in regex.finditer(text):
+            matches.append((match.start(), match.end(), replacement, pattern_text))
+    
+    if not matches:
+        return text, 0
+    
+    # 优先处理较长的匹配，随后按起始位置排序
+    matches.sort(key=lambda item: (item[0], -(item[1] - item[0])))
+    
+    result_parts = []
+    last_index = 0
+    total_replacements = 0
+    applied_counts = {}
+    
+    for start, end, replacement, pattern_text in matches:
+        if start < last_index:
+            # 与已替换区域重叠，跳过
+            continue
+        
+        result_parts.append(text[last_index:start])
+        result_parts.append(replacement)
+        last_index = end
+        total_replacements += 1
+        applied_counts[pattern_text] = applied_counts.get(pattern_text, 0) + 1
+    
+    result_parts.append(text[last_index:])
+    updated_text = ''.join(result_parts)
+    
+    for pattern_text, count in applied_counts.items():
+        replacement = pattern_replacements.get(pattern_text, "?")
+        logger.info(
+            f"本地翻译替换: '{pattern_text}' -> '{replacement}' (匹配 {count} 次)"
+        )
+    
+    return updated_text, total_replacements
+
+
 def translate_text(text, from_lang=None, to_lang=None):
     """
     便捷的翻译函数，支持自动语种检测和翻译方向
@@ -267,10 +328,19 @@ def translate_text(text, from_lang=None, to_lang=None):
         
         # 首先检查本地翻译缓存（大小写不敏感）
         text_lower = text_cleaned.lower()
-        if text_lower in local_translations:
-            cached_result = local_translations[text_lower]
+        entry = local_translations.get(text_lower)
+        if entry:
+            cached_result = entry.get("replacement", text_cleaned)
             logger.info(f"使用本地翻译缓存: '{text_cleaned}' -> '{cached_result}'")
             return cached_result
+        
+        # 尝试在句子中执行局部替换
+        replaced_text, replacements = apply_local_translations(text_cleaned)
+        if replacements > 0:
+            logger.info(
+                f"本地翻译完成（局部替换 {replacements} 处）: '{text_cleaned}' -> '{replaced_text}'"
+            )
+            return replaced_text
         
         # 本地缓存未找到，使用API翻译
         logger.debug(f"本地缓存未找到 '{text_cleaned}'，调用API翻译")

@@ -166,19 +166,19 @@ async def test_custom_params(host="localhost", port=None):
             'params': {'top_color': 'green', 'bottom_color': 'orange'}
         },
         {
-            'text': '引领者之星',
+            'text': '我们团队的引领者之星计划正在推进，请大家按时反馈进展。',
             'params': {'top_color': 'cyan', 'bottom_color': 'yellow'}
         },
         {
-            'text': '小华',
+            'text': '小华提出全方位的改进建议，确保流程可以迅速流转。',
             'params': {'top_color': 'magenta', 'bottom_color': 'lime'}
         },
         {
-            'text': '全方位',
+            'text': 'The Leader Star roadmap ensures a comprehensive rollout for every team this quarter.',
             'params': {'top_color': 'orange', 'bottom_color': 'white'}
         },
         {
-            'text': '流转',
+            'text': 'Xiao Hua will monitor the transfer milestones carefully to avoid last-minute surprises.',
             'params': {'top_color': 'pink', 'bottom_color': 'cyan'}
         }
     ]

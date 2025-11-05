@@ -180,6 +180,10 @@ pyinstaller --onefile --noconsole --name=subtitle_optimized main.py
 小华，Xiao Hua
 全方位，comprehensive
 流转，transfer
+Leader Star，引领者之星
+Xiao Hua，小华
+comprehensive，全方位
+transfer，流转
 ```
 
 #### 2. 文件放置位置（exe兼容）
@@ -202,7 +206,26 @@ pyinstaller --onefile --noconsole --name=subtitle_optimized main.py
 "引领者之星" → "Leader Star"
 "全方位" → "comprehensive"
 "transfer" → "流转"
+"Leader Star" → "引领者之星"
+"Xiao Hua" → "小华"
+"comprehensive" → "全方位"
 ```
+
+#### 嵌入句子自动替换
+```
+"我们团队的引领者之星计划正在推进，请大家按时反馈。" 
+  → "我们团队的 Leader Star 计划正在推进，请大家按时反馈。"
+"The Leader Star roadmap ensures a comprehensive rollout for every team." 
+  → "The 引领者之星 roadmap ensures a 全方位 rollout for every team."
+"Xiao Hua will monitor the transfer milestones carefully." 
+  → "小华 will monitor the 流转 milestones carefully."
+```
+
+#### 替换算法说明
+- **匹配阶段**：对 `translations.txt` 中的每条词条构建大小写不敏感的正则（`re.escape` 保留空格和特殊字符），在原句里查找全部命中片段，生成 `(start, end, replacement)` 列表。
+- **排序策略**：先按起始下标升序，再在同一起点里优先选择更长的匹配，避免长词被短词截断。
+- **替换执行**：按排序结果从左到右构造新句子。若某个命中区间与已替换区域重叠则跳过，从而保证不会重复或交错替换。
+- **复杂度**：最多 200 条词条、句长亦有限时，整体复杂度近似 `O(词条数 × 句长)`，足够覆盖“带空格词组”等常见场景。若未来词条增至成百上千，可考虑改用 Trie 或 Aho-Corasick 自动机以降低重复扫描成本。
 
 ### 🧪 测试与验证
 
@@ -215,37 +238,34 @@ pyinstaller --onefile --noconsole --name=subtitle_optimized main.py
 ### 📋 配置示例
 
 #### 商务对话
-```json
-{
-    "Good morning, how can I help you?": "早上好，我能为您做什么？",
-    "Let me check that for you": "让我为您检查一下",
-    "Thank you for your patience": "感谢您的耐心"
-}
+```
+Good morning, how can I help you?，早上好，我能为您做什么？
+Let me check that for you，让我为您检查一下
+Thank you for your patience，感谢您的耐心
 ```
 
 #### 技术术语
-```json
-{
-    "Machine Learning": "机器学习",
-    "Deep Learning": "深度学习",
-    "Neural Network": "神经网络",
-    "API": "应用程序接口"
-}
+```
+Machine Learning，机器学习
+Deep Learning，深度学习
+Neural Network，神经网络
+API，应用程序接口
 ```
 
 ### 🔧 故障排除
 
 | 问题 | 解决方案 |
 |------|----------|
-| 缓存不生效 | 检查JSON格式，确认文本完全匹配 |
+| 缓存不生效 | 检查TXT格式是否为“源文，目标文”，并确认日志无格式错误警告 |
 | exe找不到文件 | 将translations.txt放在exe同目录 |
 | 中文显示乱码 | 确保文件保存为UTF-8编码 |
 | 修改未生效 | 重启程序或检查文件保存 |
 
 ### 📝 详细日志
 ```
-INFO - 成功加载本地翻译映射: 6 条记录 (文件: ./translations.txt)
-INFO - 使用本地翻译缓存: '你好' -> 'Hello'
+INFO - 成功加载本地翻译映射: 10 条记录 (文件: ./translations.txt)
+INFO - 本地翻译替换: '引领者之星' -> 'Leader Star' (匹配 1 次)
+INFO - 本地翻译完成（局部替换 2 处）: 'Xiao Hua will monitor the transfer milestones carefully.' -> '小华 will monitor the 流转 milestones carefully.'
 DEBUG - 本地缓存未找到 'New sentence'，调用API翻译
 ```
 
