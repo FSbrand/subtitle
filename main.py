@@ -363,14 +363,33 @@ class WebSocketHandler:
                     
                     logger.info(f"解析参数 - 原文: {source_text}, 译文: {target_text}, 位置: {y_position}, 上方颜色: {top_color}, 下方颜色: {bottom_color}, 超时: {timeout}, 高度: {height}")
 
+                    translation_status = "provided" if target_text else "success"
+                    translated_text = target_text
+                    
+                    if not translated_text:
+                        try:
+                            loop = asyncio.get_running_loop()
+                            translated_text = await loop.run_in_executor(None, translate_text, source_text)
+                        except Exception as translate_error:
+                            translation_status = f"error: {translate_error}"
+                            translated_text = source_text
+                            logger.error(f"翻译失败，使用原文兜底: {translate_error}")
+                            logger.error(traceback.format_exc())
+                    
                     # 发送更新信号
                     self.subtitle_window.update_signal.emit(
-                        source_text, target_text, y_position, 
+                        source_text, translated_text, y_position, 
                         top_color, bottom_color, timeout, height
                     )
                     
                     # 发送确认响应
-                    response = {"status": "success", "message": "字幕已更新"}
+                    response = {
+                        "status": "success",
+                        "message": "字幕已更新",
+                        "source_text": source_text,
+                        "translated_text": translated_text,
+                        "translation_status": translation_status
+                    }
                     await websocket.send(json.dumps(response))
                     logger.info(f"发送响应: {response}")
                     
