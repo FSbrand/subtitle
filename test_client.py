@@ -95,10 +95,9 @@ async def send_test_message(websocket, text, custom_params=None):
                 response = response.decode('utf-8', errors='replace')
             try:
                 response_json = json.loads(response)
-                translated = response_json.get("translated_text", "")
-                source_preview = response_json.get("source_text", "")[:40]
-                translated_preview = translated[:80]
-                log_output(f"← 翻译: {source_preview}{'...' if len(source_preview) >= 40 else ''} -> {translated_preview}{'...' if len(translated) > 80 else ''}")
+                source_full = response_json.get("source_text", "")
+                translated_full = response_json.get("translated_text", "")
+                log_output(f"← 翻译: {source_full} -> {translated_full}")
             except json.JSONDecodeError:
                 log_output(f"← 响应: {response[:120]}{'...' if len(response) > 120 else ''}")
         except asyncio.TimeoutError:
