@@ -6,9 +6,9 @@
 # 科大讯飞API配置 (硬编码)
 XFYUN_CONFIG = {
     "host": "itrans.xfyun.cn",
-    "app_id": "43db53bc",
-    "api_key": "401e2f30446a5e7e90671a72edea21af",
-    "secret": "NjE0NTIzNWI1M2JhMTg3OTM1MGI5MGU4"
+    "app_id": "4eb9ed9f",
+    "api_key": "81092656b8f469fbb60f1016247d03b1",
+    "secret": "a2fae5fac1108c1327aac2444967ffb6"
 }
 
 # 翻译配置
